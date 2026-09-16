@@ -1,0 +1,30 @@
+services:
+  friday-bot:
+    build: .
+    container_name: friday-bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      AGENT_PROJECT_DIR: /data/sessions
+      BOT_DATA_DIR: /data/control
+      CLAUDE_BIN: claude
+    volumes:
+      - D:/FridayAgentData:/data
+      - C:/Users/xuanh/.claude:/root/.claude:ro
+      - C:/Users/xuanh/.claude.json:/root/.claude.json:ro
+    command: ["python3", "bot.py"]
+
+  friday-admin:
+    build: .
+    container_name: friday-admin
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      AGENT_PROJECT_DIR: /data/sessions
+      BOT_DATA_DIR: /data/control
+      ADMIN_HOST: 0.0.0.0
+    volumes:
+      - D:/FridayAgentData:/data
+    ports:
+      - "127.0.0.1:8765:8765"
+    command: ["python3", "admin.py"]

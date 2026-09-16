@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import hmac
 import json
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
@@ -121,9 +123,39 @@ def serve(
     host: str = "127.0.0.1",
     port: int = 8765,
     engine_settings: dict[str, dict[str, str]] | None = None,
+    auth_user: str | None = None,
+    auth_password: str | None = None,
 ) -> None:
+    # When this dashboard is reachable beyond the host (e.g. via a tunnel),
+    # auth_user/auth_password gate every request with HTTP Basic Auth.
+    # Unset (the local-only default) leaves it open, matching prior behavior.
+    require_auth = bool(auth_user and auth_password)
+
     class Handler(BaseHTTPRequestHandler):
+        def _authorized(self) -> bool:
+            if not require_auth:
+                return True
+            header = self.headers.get("Authorization", "")
+            if not header.startswith("Basic "):
+                return False
+            try:
+                decoded = base64.b64decode(header[6:]).decode("utf-8")
+            except (ValueError, UnicodeDecodeError):
+                return False
+            user, _, password = decoded.partition(":")
+            return hmac.compare_digest(user, auth_user or "") and hmac.compare_digest(
+                password, auth_password or ""
+            )
+
         def do_GET(self) -> None:  # noqa: N802
+            if not self._authorized():
+                body = b"Unauthorized"
+                self.send_response(401)
+                self.send_header("WWW-Authenticate", 'Basic realm="Friday Admin"')
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             path = urlparse(self.path).path
             if path == "/api/dashboard":
                 body = json.dumps(
