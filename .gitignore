@@ -1,0 +1,20 @@
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.history/
+.codeartsdoer/
+.DS_Store
+
+# Runtime state belongs outside the source checkout.
+erik_agent_project/
+tele_bot/
+FridayAgentData/
+sessions/
+control/
+uploads/
+artifacts/
+*.log
