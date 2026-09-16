@@ -10,8 +10,8 @@ services:
       CLAUDE_BIN: claude
     volumes:
       - D:/FridayAgentData:/data
-      - C:/Users/xuanh/.claude:/root/.claude:ro
-      - C:/Users/xuanh/.claude.json:/root/.claude.json:ro
+      - C:/Users/xuanh/.claude:/root/.claude
+      - C:/Users/xuanh/.claude.json:/root/.claude.json
     command: ["python3", "bot.py"]
 
   friday-admin:
