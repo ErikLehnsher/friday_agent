@@ -19,6 +19,7 @@ from dotenv import set_key
 
 from .actions import open_chrome, open_claude, unread_mail
 from .claude_runner import (
+    ClaudeMaxTurnsExceeded,
     append_session_transcript,
     get_user_session,
     list_user_sessions,
@@ -838,6 +839,8 @@ def create_bot(settings: Settings) -> telebot.TeleBot:
                     settings.claude_model,
                     settings.claude_effort,
                     effective_mode,
+                    max_turns=settings.claude_max_turns,
+                    timeout_seconds=settings.claude_timeout_seconds,
                     force_new=force_new,
                     session_name=session_name,
                     admin_workspace_root=(
@@ -931,7 +934,26 @@ def create_bot(settings: Settings) -> telebot.TeleBot:
                 duration_ms=round((time.monotonic() - started_at) * 1000),
                 error_type="TimeoutExpired",
             )
-            reply(message, "Claude quá thời gian chờ 180 giây.")
+            reply(
+                message,
+                f"Claude quá thời gian chờ {settings.claude_timeout_seconds} giây.",
+            )
+        except ClaudeMaxTurnsExceeded as exc:
+            logging.warning("Claude invocation reached action limit: %s", exc)
+            registry.audit(
+                "engine_run_failed",
+                message.from_user.id,
+                engine="claude",
+                model=settings.claude_model,
+                effort=settings.claude_effort,
+                duration_ms=round((time.monotonic() - started_at) * 1000),
+                error_type="ClaudeMaxTurnsExceeded",
+            )
+            reply(
+                message,
+                "Friday cần nhiều bước hơn để hoàn tất yêu cầu này. "
+                "Mình đã dừng an toàn để tránh chạy quá lâu; admin có thể tăng giới hạn tác vụ rồi thử lại.",
+            )
         except (RuntimeError, OSError) as exc:
             # Claude CLI already returns a bounded stderr excerpt. Keep it in the
             # local operator log so configuration/auth failures are diagnosable,
@@ -1013,6 +1035,8 @@ def create_bot(settings: Settings) -> telebot.TeleBot:
                         settings.claude_model,
                         settings.claude_effort,
                         effective_mode,
+                        max_turns=settings.claude_max_turns,
+                        timeout_seconds=settings.claude_timeout_seconds,
                         admin_workspace_root=(
                             settings.agent_project_dir if is_admin else None
                         ),

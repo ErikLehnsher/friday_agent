@@ -11,7 +11,6 @@ from pathlib import Path
 from uuid import uuid4
 
 
-CLAUDE_TIMEOUT_SECONDS = 180
 SESSION_REGISTRY = "sessions.json"
 LEGACY_SESSION_METADATA = "current_session.json"
 SESSION_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
@@ -88,6 +87,10 @@ class UserSession:
     session_id: str
     claude_session_id: str | None
     is_new: bool
+
+
+class ClaudeMaxTurnsExceeded(RuntimeError):
+    """Claude exhausted its bounded tool-action budget before a final answer."""
 
 
 def _user_root(sessions_root: Path, user_id: int) -> Path:
@@ -270,6 +273,7 @@ def build_command(
     model: str = "sonnet",
     effort: str = "medium",
     agent_mode: str = "test",
+    max_turns: int = 16,
     admin_workspace_root: Path | None = None,
     web_access: str = "none",
     allow_shell: bool = False,
@@ -283,7 +287,7 @@ def build_command(
         "--output-format",
         "json",
         "--max-turns",
-        "8",
+        str(max_turns),
         "--model",
         model,
         "--effort",
@@ -473,6 +477,8 @@ def run_claude(
     model: str = "sonnet",
     effort: str = "medium",
     agent_mode: str = "test",
+    max_turns: int = 16,
+    timeout_seconds: int = 300,
     force_new: bool = False,
     session_name: str | None = None,
     admin_workspace_root: Path | None = None,
@@ -500,6 +506,7 @@ def run_claude(
                 model,
                 effort,
                 agent_mode,
+                max_turns,
                 admin_workspace_root,
                 web_access,
                 allow_shell,
@@ -510,7 +517,7 @@ def run_claude(
             check=False,
             capture_output=True,
             text=True,
-            timeout=CLAUDE_TIMEOUT_SECONDS,
+            timeout=timeout_seconds,
             shell=False,
         )
 
@@ -537,6 +544,10 @@ def run_claude(
                     if value.strip()
                 )[:500]
                 raise RuntimeError(detail or f"Claude exited with code {completed.returncode}")
+        elif "error_max_turns" in detail:
+            raise ClaudeMaxTurnsExceeded(
+                f"Claude reached its {max_turns}-turn action limit before completing the request."
+            )
         else:
             raise RuntimeError(detail or f"Claude exited with code {completed.returncode}")
     claude_session_id = _claude_session_id_from_output(completed.stdout)

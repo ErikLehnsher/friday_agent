@@ -21,6 +21,8 @@ class Settings:
     claude_bin: str = "claude"
     claude_model: str = "sonnet"
     claude_effort: str = "medium"
+    claude_max_turns: int = 16
+    claude_timeout_seconds: int = 300
     codex_bin: str = "codex"
     codex_model: str = "gpt-5.6-luna"
     codex_effort: str = "medium"
@@ -70,6 +72,20 @@ def load_settings() -> Settings:
     claude_effort = os.getenv("CLAUDE_EFFORT", "medium").strip() or "medium"
     if claude_effort not in {"low", "medium", "high", "xhigh", "max"}:
         raise ValueError("CLAUDE_EFFORT must be low, medium, high, xhigh, or max")
+    claude_max_turns_raw = os.getenv("CLAUDE_MAX_TURNS", "16").strip()
+    try:
+        claude_max_turns = int(claude_max_turns_raw)
+    except ValueError as exc:
+        raise ValueError("CLAUDE_MAX_TURNS must be an integer") from exc
+    if not 1 <= claude_max_turns <= 40:
+        raise ValueError("CLAUDE_MAX_TURNS must be 1-40")
+    claude_timeout_raw = os.getenv("CLAUDE_TIMEOUT_SECONDS", "300").strip()
+    try:
+        claude_timeout_seconds = int(claude_timeout_raw)
+    except ValueError as exc:
+        raise ValueError("CLAUDE_TIMEOUT_SECONDS must be an integer") from exc
+    if not 15 <= claude_timeout_seconds <= 900:
+        raise ValueError("CLAUDE_TIMEOUT_SECONDS must be 15-900")
     codex_bin = os.getenv("CODEX_BIN", "codex").strip()
     if not codex_bin:
         raise ValueError("CODEX_BIN must not be empty")
@@ -126,6 +142,8 @@ def load_settings() -> Settings:
         claude_bin=claude_bin,
         claude_model=claude_model,
         claude_effort=claude_effort,
+        claude_max_turns=claude_max_turns,
+        claude_timeout_seconds=claude_timeout_seconds,
         codex_bin=codex_bin,
         codex_model=codex_model,
         codex_effort=codex_effort,
