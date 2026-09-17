@@ -839,7 +839,7 @@ def create_bot(settings: Settings) -> telebot.TeleBot:
                     settings.claude_model,
                     settings.claude_effort,
                     effective_mode,
-                    max_turns=settings.claude_max_turns,
+                    max_turns=(None if is_admin else settings.claude_max_turns),
                     timeout_seconds=settings.claude_timeout_seconds,
                     force_new=force_new,
                     session_name=session_name,
@@ -1035,7 +1035,7 @@ def create_bot(settings: Settings) -> telebot.TeleBot:
                         settings.claude_model,
                         settings.claude_effort,
                         effective_mode,
-                        max_turns=settings.claude_max_turns,
+                        max_turns=(None if is_admin else settings.claude_max_turns),
                         timeout_seconds=settings.claude_timeout_seconds,
                         admin_workspace_root=(
                             settings.agent_project_dir if is_admin else None

@@ -273,7 +273,7 @@ def build_command(
     model: str = "sonnet",
     effort: str = "medium",
     agent_mode: str = "test",
-    max_turns: int = 16,
+    max_turns: int | None = 16,
     admin_workspace_root: Path | None = None,
     web_access: str = "none",
     allow_shell: bool = False,
@@ -286,8 +286,6 @@ def build_command(
         prompt,
         "--output-format",
         "json",
-        "--max-turns",
-        str(max_turns),
         "--model",
         model,
         "--effort",
@@ -295,6 +293,8 @@ def build_command(
         "--permission-mode",
         "acceptEdits",
     ]
+    if max_turns is not None:
+        command.extend(["--max-turns", str(max_turns)])
     if admin_workspace_root is not None:
         mode_prompt = ADMIN_MODE_PROMPT
     else:
@@ -477,7 +477,7 @@ def run_claude(
     model: str = "sonnet",
     effort: str = "medium",
     agent_mode: str = "test",
-    max_turns: int = 16,
+    max_turns: int | None = 16,
     timeout_seconds: int = 300,
     force_new: bool = False,
     session_name: str | None = None,
