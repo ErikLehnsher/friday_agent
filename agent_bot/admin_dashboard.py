@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, urlparse
 
 from .facebook_api import FacebookApiError, FacebookGraphClient
 from .facebook_config import FacebookPageConfigStore
+from .dashboard_page import PAGE
 
 
 def _read_json(path: Path, fallback: object) -> object:
@@ -99,6 +100,12 @@ def snapshot(data_dir: Path, engine_settings: dict[str, dict[str, str]] | None =
             }
         )
     user_rows.sort(key=lambda item: (item["role"] != "admin", item["name"].lower()))
+    facebook_events = [
+        item
+        for item in events
+        if item.get("channel") == "facebook"
+        or str(item.get("event", "")).startswith("facebook_")
+    ]
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "summary": {
@@ -111,10 +118,25 @@ def snapshot(data_dir: Path, engine_settings: dict[str, dict[str, str]] | None =
         },
         "users": user_rows,
         "events": list(reversed(dashboard_events[-500:])),
+        "facebook": {
+            "received": sum(
+                item.get("event") == "facebook_message_received"
+                for item in facebook_events
+            ),
+            "replied": sum(
+                item.get("event") == "facebook_agent_replied"
+                for item in facebook_events
+            ),
+            "failed": sum(
+                item.get("event") == "facebook_agent_failed"
+                for item in facebook_events
+            ),
+            "events": list(reversed(facebook_events[-100:])),
+        },
     }
 
 
-PAGE = """<!doctype html><html><head><meta charset='utf-8'><title>Friday Admin</title>
+LEGACY_PAGE = """<!doctype html><html><head><meta charset='utf-8'><title>Friday Admin</title>
 <style>body{font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#10131b;color:#eef2ff;margin:0;padding:28px}h1{margin-top:0}.muted{color:#a6b0c8}.cards{display:flex;gap:12px;flex-wrap:wrap}.card{background:#1a2030;border:1px solid #303a54;border-radius:12px;padding:14px;min-width:150px}.n{font-size:25px;font-weight:700}table{width:100%;border-collapse:collapse;background:#161c29;margin-top:14px}th,td{padding:9px;border-bottom:1px solid #303a54;text-align:left;vertical-align:top}input,select{background:#161c29;color:#fff;border:1px solid #4a5878;border-radius:7px;padding:7px;margin-right:8px}.ok{color:#72e6a5}.bad{color:#ff9090}code{color:#b9ceff}</style></head><body>
 <h1>Friday Admin <span class='muted'>local-only</span></h1><p class='muted'>Provider quota is intentionally not estimated. “5h observed runtime” is bot execution time, not Claude/Codex account credit remaining.</p>
 <div id='cards' class='cards'></div><h2>Facebook Page</h2><p class='muted'>Credentials are stored only in the private runtime data volume. Existing secret values are never rendered here.</p><form id='facebook'><label><input type='checkbox' name='enabled'> Enable Facebook Page agent</label><p><input name='page_name' placeholder='Page name'><input name='page_id' placeholder='Facebook Page ID'><input name='app_id' placeholder='Meta App ID'><input name='graph_version' placeholder='Graph API version (v24.0)'></p><p><input name='app_secret' type='password' placeholder='App secret (leave blank to keep)'><input name='verify_token' type='password' placeholder='Webhook verify token (leave blank to keep)'><input name='page_access_token' type='password' placeholder='Page access token (leave blank to keep)'></p><button>Save Facebook configuration</button> <button type='button' id='test-facebook'>Test Graph API</button> <span id='facebook-status' class='muted'></span></form><h2>Users</h2><div><input id='user' placeholder='Filter user'><select id='engine'><option value=''>All engines</option><option value='claude'>Claude</option><option value='codex'>Codex</option></select></div><table><thead><tr><th>User</th><th>Status</th><th>Current engine</th><th>Runs</th><th>Failed</th><th>Permissions</th><th>Last seen</th></tr></thead><tbody id='users'></tbody></table><h2>Activity</h2><table><thead><tr><th>Time</th><th>User</th><th>Event</th><th>Engine / model</th><th>Session</th><th>Duration</th></tr></thead><tbody id='events'></tbody></table>

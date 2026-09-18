@@ -7,6 +7,7 @@ import os
 import re
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 _VERSION_RE = re.compile(r"^v\d+(?:\.\d+)?$")
@@ -48,6 +49,9 @@ class FacebookPageConfigStore:
             "page_name": value.get("page_name", ""),
             "app_id": value.get("app_id", ""),
             "graph_version": value.get("graph_version", "v24.0"),
+            "webhook_url": value.get(
+                "webhook_url", "https://snakersdoo.io.vn/facebook/webhook"
+            ),
             "has_app_secret": bool(value.get("app_secret")),
             "has_verify_token": bool(value.get("verify_token")),
             "has_page_access_token": bool(value.get("page_access_token")),
@@ -59,16 +63,26 @@ class FacebookPageConfigStore:
         page_name = str(incoming.get("page_name", existing.get("page_name", ""))).strip()
         app_id = str(incoming.get("app_id", existing.get("app_id", ""))).strip()
         version = str(incoming.get("graph_version", existing.get("graph_version", "v24.0"))).strip()
+        webhook_url = str(
+            incoming.get(
+                "webhook_url",
+                existing.get("webhook_url", "https://snakersdoo.io.vn/facebook/webhook"),
+            )
+        ).strip()
         if page_id and not page_id.isdigit():
             raise ValueError("Facebook Page ID chỉ được chứa chữ số.")
         if not _VERSION_RE.fullmatch(version):
             raise ValueError("Graph API version phải có dạng v24.0.")
+        parsed_url = urlparse(webhook_url)
+        if parsed_url.scheme != "https" or not parsed_url.netloc or parsed_url.username or parsed_url.password:
+            raise ValueError("Webhook URL phải là HTTPS public hợp lệ.")
         value: dict[str, Any] = {
             "enabled": bool(incoming.get("enabled", existing.get("enabled", False))),
             "page_id": page_id,
             "page_name": page_name,
             "app_id": app_id,
             "graph_version": version,
+            "webhook_url": webhook_url,
         }
         for secret in ("app_secret", "verify_token", "page_access_token"):
             supplied = incoming.get(secret)
