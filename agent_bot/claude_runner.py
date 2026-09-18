@@ -93,7 +93,7 @@ class ClaudeMaxTurnsExceeded(RuntimeError):
     """Claude exhausted its bounded tool-action budget before a final answer."""
 
 
-def _user_root(sessions_root: Path, user_id: int) -> Path:
+def _user_root(sessions_root: Path, user_id: int | str) -> Path:
     root = sessions_root / f"user-{user_id}"
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     return root
@@ -184,7 +184,7 @@ def _new_session(user_root: Path, name: str) -> UserSession:
 
 def get_user_session(
     sessions_root: Path,
-    user_id: int,
+    user_id: int | str,
     force_new: bool = False,
     session_name: str | None = None,
 ) -> UserSession:
@@ -472,7 +472,7 @@ def _clear_claude_session_id(session: UserSession) -> None:
 def run_claude(
     claude_bin: str,
     sessions_root: Path,
-    user_id: int,
+    user_id: int | str,
     prompt: str,
     model: str = "sonnet",
     effort: str = "medium",

@@ -33,6 +33,8 @@ class Settings:
     web_access: str = "search"
     chatgpt_desktop_enabled: bool = False
     chatgpt_desktop_timeout_seconds: int = 180
+    facebook_host: str = "0.0.0.0"
+    facebook_port: int = 8781
     env_path: Path = ENV_PATH
 
 
@@ -123,6 +125,14 @@ def load_settings() -> Settings:
         raise ValueError("CHATGPT_DESKTOP_TIMEOUT_SECONDS must be an integer") from exc
     if not 15 <= chatgpt_desktop_timeout_seconds <= 600:
         raise ValueError("CHATGPT_DESKTOP_TIMEOUT_SECONDS must be 15-600")
+    facebook_host = os.getenv("FACEBOOK_HOST", "0.0.0.0").strip() or "0.0.0.0"
+    facebook_port_raw = os.getenv("FACEBOOK_PORT", "8781").strip()
+    try:
+        facebook_port = int(facebook_port_raw)
+    except ValueError as exc:
+        raise ValueError("FACEBOOK_PORT must be an integer") from exc
+    if not 1 <= facebook_port <= 65535:
+        raise ValueError("FACEBOOK_PORT must be 1-65535")
     bot_data_dir_raw = os.getenv("BOT_DATA_DIR", "").strip()
     if not bot_data_dir_raw:
         raise ValueError("BOT_DATA_DIR is required")
@@ -154,4 +164,6 @@ def load_settings() -> Settings:
         web_access=web_access,
         chatgpt_desktop_enabled=chatgpt_enabled_raw == "true",
         chatgpt_desktop_timeout_seconds=chatgpt_desktop_timeout_seconds,
+        facebook_host=facebook_host,
+        facebook_port=facebook_port,
     )

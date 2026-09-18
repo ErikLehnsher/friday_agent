@@ -28,3 +28,21 @@ services:
     ports:
       - "127.0.0.1:8765:8765"
     command: ["python3", "admin.py"]
+
+  friday-facebook:
+    build: .
+    container_name: friday-facebook
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      AGENT_PROJECT_DIR: /data/sessions
+      BOT_DATA_DIR: /data/control
+      CLAUDE_BIN: claude
+      FACEBOOK_HOST: 0.0.0.0
+      FACEBOOK_PORT: 8781
+    volumes:
+      - D:/FridayAgentData:/data
+      - C:/Users/xuanh/.claude:/root/.claude
+      - C:/Users/xuanh/.claude.json:/root/.claude.json
+    # Do not publish this port. A reverse proxy should expose only /facebook/webhook.
+    command: ["python3", "facebook.py"]

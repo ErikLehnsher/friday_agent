@@ -198,6 +198,36 @@ Users can also write naturally. Friday routes normal messages through their curr
 engine. Do not send passwords, API keys, or other sensitive data through a chat
 adapter.
 
+## Facebook Page adapter
+
+Facebook Messenger is a separate transport adapter. It uses the same Friday core,
+but gives each sender a separate identity and workspace under the managed session
+root. A Facebook customer is never mapped onto a Telegram user or administrator.
+
+The Page credentials are entered through the local Friday Admin dashboard, not in
+`.env` and never in git:
+
+1. Start the dashboard and open `http://127.0.0.1:8765` locally. Set
+   `ADMIN_USER` and `ADMIN_PASSWORD` before making it reachable through a tunnel.
+2. In **Facebook Page**, enter the Page ID, Meta App ID, Graph API version, App
+   Secret, webhook Verify Token, and long-lived Page Access Token. Secret fields
+   are write-only: leaving one blank preserves the saved value.
+3. Click **Test Graph API** to verify that the Page token can read the Page
+   identity. This is the only dashboard action that calls Meta.
+4. Recreate or restart the `friday-facebook` service after enabling it or changing
+   its credentials.
+5. Put a reverse proxy in front of `friday-facebook` and expose only
+   `https://your-domain.example/facebook/webhook`. Do not publish port 8781 to the
+   host directly. Configure that callback URL and the same Verify Token in the
+   Meta app webhook settings, then subscribe the Page to incoming messages.
+
+The adapter validates `X-Hub-Signature-256` before accepting a POST. It sends a
+typing indicator while Friday works, splits long replies into Messenger-sized
+messages, and records metadata-only Facebook events in the common audit log. It
+does not grant web, shell, browser, or host-file access to Page users. Meta's app
+review, privacy-policy, and data-deletion requirements remain the Page owner's
+responsibility and should be completed before a public launch.
+
 ## Development notes
 
 The repository deliberately excludes:

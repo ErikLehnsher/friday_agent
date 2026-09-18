@@ -173,7 +173,7 @@ class UserRegistry:
             key=lambda item: (item.get("role") != "admin", item.get("joined_at", "")),
         )
 
-    def audit(self, event: str, user_id: int, **metadata: Any) -> None:
+    def audit(self, event: str, user_id: int | str, **metadata: Any) -> None:
         entry = {
             "timestamp": _now(),
             "event": event,
