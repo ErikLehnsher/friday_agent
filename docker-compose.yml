@@ -44,5 +44,11 @@ services:
       - D:/FridayAgentData:/data
       - C:/Users/xuanh/.claude:/root/.claude
       - C:/Users/xuanh/.claude.json:/root/.claude.json
+    networks: [friday-platform]
     # Do not publish this port. A reverse proxy should expose only /facebook/webhook.
     command: ["python3", "facebook.py"]
+
+networks:
+  friday-platform:
+    name: friday-platform
+    external: true
