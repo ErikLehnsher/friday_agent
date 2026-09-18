@@ -214,8 +214,8 @@ The Page credentials are entered through the local Friday Admin dashboard, not i
    are write-only: leaving one blank preserves the saved value.
 3. Click **Test Graph API** to verify that the Page token can read the Page
    identity. This is the only dashboard action that calls Meta.
-4. Recreate or restart the `friday-facebook` service after enabling it or changing
-   its credentials.
+4. Start the `friday-facebook` service once. It reads saved credential changes on
+   each incoming webhook, so restarting is not needed just to change credentials.
 5. Put a reverse proxy in front of `friday-facebook` and expose only
    `https://your-domain.example/facebook/webhook`. Do not publish port 8781 to the
    host directly. Configure that callback URL and the same Verify Token in the
